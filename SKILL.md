@@ -2,7 +2,7 @@
 
 Route LinkedIn replies (HeyReach) and email replies (Instantly) into a single Slack channel using a Supabase Edge Function as a permanent webhook relay.
 
-Works for **any company, any HeyReach workspace, any Slack workspace** — just swap credentials.
+Works for **any company, any HeyReach workspace, any Instantly account, any Slack workspace** — just swap credentials.
 
 ---
 
@@ -108,7 +108,7 @@ curl -X POST "https://api.heyreach.io/api/public/webhooks/GetAllWebhooks" \
 
 > **Note:** The MCP key (used in `xMcpKey=` in the MCP URL) is NOT the same as the HeyReach API key. For direct API calls, use the API key from HeyReach Settings → Integrations → API Keys.
 
-### Step 4 — Create Instantly Webhook (if applicable)
+### Step 4 — Create Instantly Webhook
 
 Get an API key first: Instantly → Settings → Integrations → API Keys → Create (scope: `all:all`)
 
@@ -145,14 +145,36 @@ Check the Slack channel — both messages should appear within seconds.
 
 ## Adding a New HeyReach Workspace to an Existing Relay
 
-If a second HeyReach account (e.g. a new LinkedIn sender account, different company workspace) needs to route to the **same** Supabase function and Slack channel:
+Any HeyReach account (new company, new LinkedIn sender, different workspace) can point to the same Supabase function and Slack channel:
 
-1. Get the HeyReach API key for the new workspace (Settings → Integrations → API Keys)
+1. Get the HeyReach API key for the new workspace (HeyReach Settings → Integrations → API Keys)
 2. Run the `CreateWebhook` REST call above pointing to the existing `SUPABASE_FUNCTION_URL`
 3. Verify with `GetAllWebhooks`
 4. Test with a mock payload
 
-No redeploy needed — the function is already live and handles any HeyReach payload.
+No redeploy needed — the function handles any HeyReach payload regardless of which workspace it came from.
+
+---
+
+## Adding a New Instantly Account to an Existing Relay
+
+Any Instantly account can point to the same Supabase function and Slack channel:
+
+1. Get an API key: Instantly → Settings → Integrations → API Keys → Create (scope: `all:all`)
+2. Create the webhook:
+```bash
+curl -X POST "https://api.instantly.ai/api/v2/webhooks" \
+  -H "Authorization: Bearer <INSTANTLY_API_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "target_hook_url": "<SUPABASE_FUNCTION_URL>",
+    "event_type": "reply_received"
+  }'
+```
+3. Verify: `GET https://api.instantly.ai/api/v2/webhooks` with the same Bearer token
+4. Test with a mock payload (see Step 5 above)
+
+No redeploy needed — the function auto-detects Instantly payloads by their field shape.
 
 ---
 
